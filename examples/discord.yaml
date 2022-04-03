@@ -1,0 +1,36 @@
+kind: OAuthApi
+apiVersion: chappaai.dev/v1
+metadata:
+  name: discord
+spec:
+  auth:
+    oAuth2:
+      authorizationUrl: "https://discord.com/api/oauth2/authorize"
+      tokenUrl: "https://discord.com/api/oauth2/token"
+      authorizationParams:
+        - key: responseType
+          value: code
+        - key: grantType
+          value: authorization_code
+  http:
+    baseUrl: "https://discord.com/api/"
+    authorizationHeaderPrefix: Bearer
+    headers:
+      - key: Accept
+        value: application/json
+      - key: User-Agent
+        value: stargate
+---
+kind: OAuthConnection
+apiVersion: chappaai.dev/v1
+metadata:
+  name: discord
+spec:
+  api: discord
+  scopes:
+    - "identity"
+    - "email"
+  clientId: "MYID"
+  clientSecret:
+    name: "MYSECRET"
+    key: "clientSecret"

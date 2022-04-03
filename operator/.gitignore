@@ -1,0 +1,4 @@
+/target
+
+# Generated CRDs from cargo run --bin crdgen > crds.yaml
+/crds.yaml

@@ -1,0 +1,20 @@
+kind: OAuthApi
+apiVersion: chappaai.dev/v1
+metadata:
+  name: github
+spec:
+  auth:
+    oAuth2:
+      authorizationUrl: "https://github.com/login/oauth/authorize"
+      authorizationParams:
+        - key: accessType
+          value: offline
+      tokenUrl: "https://github.com/login/oauth/access_token"
+  http:
+    baseUrl: "https://api.github.com/"
+    authorizationHeaderPrefix: token
+    headers:
+      - key: Accept
+        value: application/vnd.github.v3+json
+      - key: User-Agent
+        value: stargate

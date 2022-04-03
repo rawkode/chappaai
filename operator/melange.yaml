@@ -1,0 +1,34 @@
+package:
+  name: chappaai
+  version: 0.1
+  epoch: 0
+  description: "The Kubernetes OAuth Operator"
+  target-architecture:
+    - all
+  copyright:
+    - paths:
+        - "*"
+      attestation: |
+        Copyright 2022© David Flanagan, @rawkode
+      license: MIT
+  dependencies:
+    runtime:
+
+environment:
+  contents:
+    repositories:
+      - https://dl-cdn.alpinelinux.org/alpine/edge/main
+    packages:
+      - alpine-baselayout-data
+      - build-base
+      - busybox
+      - ca-certificates-bundle
+      - cargo
+      - rust
+      - rust-stdlib
+      - ssl_client
+
+pipeline:
+  - runs: |
+      cargo build --release --bin chappaai
+  - runs: cp ./release/chappaai "${{targets.destdir}}"
