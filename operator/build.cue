@@ -1,14 +1,16 @@
 package build
 
 import (
-	"dagger.io/dagger"
+	"dagger.io/dagger/core"
 	"universe.dagger.io/docker"
 )
 
 #Build: {
-	_source: dagger.#FS
+	_source: core.#Source & {
+		path: "."
+	}
 
 	image: docker.#Dockerfile & {
-		source: _source
+		source: _source.output
 	}
 }
