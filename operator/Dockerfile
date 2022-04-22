@@ -4,11 +4,11 @@ WORKDIR /src
 COPY . /src
 
 RUN cargo build --release --bin crdgen
-RUN cargo build --release --bin controller
+RUN cargo build --release --bin chappaai
 
 FROM rust
 
-COPY --from=build /src/release/crdgen /usr/bin/crdgen
-COPY --from=build /src/release/controller /usr/bin/controller
+COPY --from=build /src/target/release/crdgen /usr/bin/crdgen
+COPY --from=build /src/target/release/chappaai /usr/bin/chappaai
 
-ENTRYPOINT ["/usr/bin/controller"]
+ENTRYPOINT ["/usr/bin/chappaai"]

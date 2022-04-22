@@ -38,6 +38,7 @@ async fn main() -> std::io::Result<()> {
             }))
             .service(oauth_api::api::list)
             .service(oauth_connection::api::list)
+            .service(oauth_connection::api::connect)
     })
     .bind("0.0.0.0:7979")?;
 

@@ -26,7 +26,7 @@
 	{#each connections as connection}
 		<div class="hover:bg-gray-200 cursor-pointer px-6 py-2 border-b border-gray-500">
 			<h4 class="font-bold">{connection}</h4>
-			<p class="text-gray-500">Disconnected</p>
+			<p class="text-gray-500">Disconnected - <a href="#">Connect</a></p>
 		</div>
 	{/each}
 </div>

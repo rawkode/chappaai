@@ -7,6 +7,13 @@ use crate::oauth_api::OAuthApi;
 pub mod oauth_connection;
 use crate::oauth_connection::OAuthConnection;
 
+const RESOURCE_NAMESPACE: &str = "chappaai.dev";
+const RESOURCE_VERSION: &str = "v1";
+
+fn apiVersion() -> String {
+    format!("{}/{}", RESOURCE_NAMESPACE, RESOURCE_VERSION)
+}
+
 pub struct ApiData {
     pub oauth_apis: Store<OAuthApi>,
     pub oauth_connections: Store<OAuthConnection>,
@@ -14,6 +21,9 @@ pub struct ApiData {
 
 #[derive(Error, Debug)]
 pub enum Error {
+    #[error("Generic Error: {0}")]
+    GenericError(String),
+
     #[error("Kube Api Error: {0}")]
     KubeError(#[source] kube::Error),
 

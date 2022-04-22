@@ -6,12 +6,10 @@ import (
 )
 
 dagger.#Plan & {
+	platform: "linux/aarch64"
 	client: {
 		filesystem: {
-			"./operator": read: {
-				contents: dagger.#FS
-			}
-			"./web": read: {
+			"./": read: {
 				contents: dagger.#FS
 			}
 		}

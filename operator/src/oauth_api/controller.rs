@@ -1,4 +1,5 @@
 use super::{OAuthApi, OAuthApiPhase, OAuthApiStatus};
+use crate::apiVersion;
 use crate::kubernetes::controller;
 use crate::Error;
 use actix_web::web::Data as WebData;
@@ -33,8 +34,8 @@ async fn reconcile(api_service: Arc<OAuthApi>, ctx: Context<controller::Data>) -
     let api_services: Api<OAuthApi> = Api::namespaced(client, &ns);
 
     let new_status = Patch::Apply(json!({
-        "apiVersion": "chappaai.rawkode.dev/v1",
-        "kind": "ChappaaiService",
+        "apiVersion": apiVersion(),
+        "kind": "OAuthApi",
         "status": OAuthApiStatus {
             phase: Some(OAuthApiPhase::Registered),
         }

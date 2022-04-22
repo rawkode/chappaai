@@ -1,5 +1,5 @@
-kind: OAuthApi
 apiVersion: chappaai.dev/v1
+kind: OAuthApi
 metadata:
   name: discord
 spec:
@@ -21,8 +21,8 @@ spec:
       - key: User-Agent
         value: stargate
 ---
-kind: OAuthConnection
 apiVersion: chappaai.dev/v1
+kind: OAuthConnection
 metadata:
   name: discord
 spec:
@@ -32,5 +32,12 @@ spec:
     - "email"
   clientId: "MYID"
   clientSecret:
-    name: "MYSECRET"
+    name: "oauth-connection-discord"
     key: "clientSecret"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: oauth-connection-discord
+stringData:
+  clientSecret: "Hello"
