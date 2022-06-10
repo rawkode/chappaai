@@ -7,7 +7,6 @@ use k8s_openapi::api::core::v1::Secret;
 use kube::api::Patch;
 use kube::api::PatchParams;
 use kube::Client;
-use kube::Resource;
 use kube::ResourceExt;
 use kube::{
     api::Api,
@@ -27,25 +26,33 @@ pub async fn initializing(
     oauth_connection: Arc<OAuthConnection>,
 ) -> Result<Action, Error> {
     let name = oauth_connection.name();
-    let namespace = oauth_connection.namespace().expect("Namespace is required");
+    let namespace = oauth_connection.namespace();
 
-    let api: Api<OAuthConnection> = Api::namespaced(client.clone(), &namespace);
-    let secrets: Api<Secret> = Api::namespaced(client, &namespace);
+    let (api, secrets): (Api<OAuthConnection>, Api<Secret>) = match &namespace {
+        Some(namespace) => (
+            Api::namespaced(client.clone(), &namespace),
+            Api::namespaced(client, &namespace),
+        ),
+        None => (
+            Api::default_namespaced(client.clone()),
+            Api::default_namespaced(client),
+        ),
+    };
 
-    let _ = match oauth_connection.spec.load_client_secret(secrets).await {
+    match oauth_connection.spec.load_client_keys(secrets).await {
         Ok(secret) => secret,
         Err(e) => {
             recorder
                 .publish(Event {
                     type_: EventType::Warning,
-                    reason: format!("Client Secret: Secret unavailable"),
+                    reason: format!("❌ Client ID/Secret unavailable"),
                     note: Some("Failed to initialize".into()),
                     action: "Initializing".into(),
                     secondary: None,
                 })
                 .await
                 .map_err(Error::KubeError)?;
-            return Err(e);
+            return Ok(Action::requeue(Duration::from_secs(60)));
         }
     };
 
@@ -66,7 +73,7 @@ pub async fn initializing(
     recorder
         .publish(Event {
             type_: EventType::Normal,
-            reason: "Client Secret Available".into(),
+            reason: format!("✅ Client ID/Secret available"),
             note: Some("Initialized. Moving to Disconnected".into()),
             action: "Disconnected".into(),
             secondary: None,
@@ -74,7 +81,11 @@ pub async fn initializing(
         .await
         .map_err(Error::KubeError)?;
 
-    info!("Reconciled Foo \"{}\" in {}", name, namespace);
+    info!(
+        "Reconciled Foo \"{}\" in {}",
+        name,
+        &namespace.unwrap_or(String::from("in-cluster"))
+    );
 
-    Ok(Action::requeue(Duration::from_secs(30 * 60)))
+    Ok(Action::requeue(Duration::from_secs(60)))
 }

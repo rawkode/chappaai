@@ -40,7 +40,7 @@ async fn reconcile(
         Some(status) => match &status.phase {
             Some(phase) => match &phase {
                 OAuthConnectionPhase::Initializing => initializing(client, recorder, oauth_connection).await,
-                OAuthConnectionPhase::Disconnected => disconnected(client, recorder, oauth_connection),
+                OAuthConnectionPhase::Disconnected => disconnected(client, recorder, oauth_connection).await,
             },
             None => none(client, recorder, oauth_connection).await,
         },
@@ -76,7 +76,7 @@ impl Manager {
         let api_services = Api::<OAuthConnection>::all(client);
 
         // Ensure CRD is installed before loop-watching
-        let _r = api_services
+        api_services
             .list(&ListParams::default().limit(1))
             .await
             .expect("is the crd installed? please run: cargo run --bin crdgen | kubectl apply -f -");

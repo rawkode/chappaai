@@ -30,14 +30,17 @@ spec:
   scopes:
     - "identity"
     - "email"
-  clientId: "MYID"
-  clientSecret:
-    name: "oauth-connection-discord"
-    key: "clientSecret"
+  credentials:
+    secretRef:
+      #namespace: "current"
+      name: "oauth-connection-discord"
+      idKey: "clientId"
+      secretKey: "clientSecret"
 ---
 apiVersion: v1
 kind: Secret
 metadata:
   name: oauth-connection-discord
 stringData:
-  clientSecret: "Hello"
+  clientI: "ID"
+  clientecret: "SECRET"

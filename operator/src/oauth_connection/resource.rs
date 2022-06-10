@@ -1,8 +1,9 @@
 use k8s_openapi::{api::core::v1::Secret, ByteString};
-use kube::{Api, CustomResource};
+use kube::{client, Api, CustomResource};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
+use crate::kubernetes::get_string_value;
 use crate::Error;
 
 #[derive(CustomResource, Deserialize, Serialize, Clone, Debug, JsonSchema)]
@@ -17,43 +18,39 @@ use crate::Error;
 pub struct OAuthConnectionSpec {
     api: String,
     scopes: Vec<String>,
-    client_id: String,
-    client_secret: SecretRef,
+    credentials: CredentialOptions,
 }
 
 impl OAuthConnectionSpec {
-    pub fn get_client_id(self: &Self) -> &String {
-        &self.client_id
-    }
+    pub async fn load_client_keys(self: &Self, secrets: Api<Secret>) -> Result<(String, String), Error> {
+        match &self.credentials {
+            CredentialOptions::SecretRef(secret_ref) => {
+                let secret = secrets.get(&secret_ref.name).await.map_err(Error::KubeError)?;
 
-    pub fn get_client_secret(self: &Self) -> (&String, &String) {
-        (&self.client_secret.name, &self.client_secret.key)
-    }
+                let client_id = match get_string_value(&secret, &secret_ref.id_key) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
 
-    pub async fn load_client_secret(self: &Self, secrets: Api<Secret>) -> Result<ByteString, Error> {
-        let (secret_name, secret_key) = self.get_client_secret();
+                println!("Successfully got the cvlient id {}", client_id);
 
-        let secret = secrets.get(&secret_name).await.map_err(Error::KubeError)?;
+                let client_secret = match get_string_value(&secret, &secret_ref.secret_key) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
 
-        if secret.data.is_none() {
-            return Err(Error::GenericError(
-                "Secret has no data to contain client secret".into(),
-            ));
-        }
+                println!("Successfully got the client secret {}", client_secret);
 
-        let secret = secret.data.as_ref().unwrap();
-
-        let client_secret = match secret.get(secret_key) {
-            Some(client_secret) => client_secret,
-            None => {
-                return Err(Error::GenericError(
-                    "Secret has no data to contain client secret".into(),
-                ))
+                Ok((client_id, client_secret))
             }
-        };
-
-        Ok(client_secret.clone())
+        }
     }
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+enum CredentialOptions {
+    SecretRef(SecretRef),
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug, JsonSchema)]
@@ -61,7 +58,8 @@ impl OAuthConnectionSpec {
 struct SecretRef {
     namespace: Option<String>,
     name: String,
-    key: String,
+    id_key: String,
+    secret_key: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema)]
