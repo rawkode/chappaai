@@ -1,5 +1,5 @@
-use k8s_openapi::{api::core::v1::Secret, ByteString};
-use kube::{client, Api, CustomResource};
+use k8s_openapi::api::core::v1::Secret;
+use kube::{Api, CustomResource};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -21,7 +21,7 @@ pub struct OAuthConnectionSpec {
 }
 
 impl OAuthConnectionSpec {
-    pub async fn load_client_keys(self: &Self, secrets: Api<Secret>) -> Result<(String, String), Error> {
+    pub async fn load_client_keys(&self, secrets: Api<Secret>) -> Result<(String, String), Error> {
         match &self.credentials {
             CredentialOptions::SecretRef(secret_ref) => {
                 let secret = secrets.get(&secret_ref.name).await.map_err(Error::KubeError)?;

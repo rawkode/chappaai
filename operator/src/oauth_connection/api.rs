@@ -1,6 +1,6 @@
 use crate::ApiData;
 use actix_web::{get, web, HttpResponse};
-use oauth2::{basic::BasicClient, AuthUrl, ClientId, ClientSecret, RedirectUrl, RevocationUrl, TokenUrl};
+
 
 #[get("/oauth/connections")]
 pub async fn list(data: web::Data<ApiData>) -> HttpResponse {
@@ -10,7 +10,7 @@ pub async fn list(data: web::Data<ApiData>) -> HttpResponse {
         .map(|service| {
             let meta = service.metadata.clone();
 
-            meta.name.unwrap_or(String::from("Unknown"))
+            meta.name.unwrap_or_else(|| String::from("Unknown"))
         })
         .collect();
 
@@ -18,7 +18,7 @@ pub async fn list(data: web::Data<ApiData>) -> HttpResponse {
 }
 
 #[get("/oauth/connections/{name}")]
-pub async fn connect(data: web::Data<ApiData>) -> HttpResponse {
+pub async fn connect(_data: web::Data<ApiData>) -> HttpResponse {
     // let google_client_id = ClientId::new(env::var("GOOGLE_CLIENT_ID"));
     // let google_client_secret = ClientSecret::new(env::var("GOOGLE_CLIENT_SECRET"));
     // let auth_url = AuthUrl::new("https://accounts.google.com/o/oauth2/v2/auth".to_string());

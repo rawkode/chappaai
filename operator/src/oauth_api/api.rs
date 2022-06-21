@@ -9,7 +9,7 @@ pub async fn list(data: web::Data<ApiData>) -> HttpResponse {
         .map(|service| {
             let meta = service.metadata.clone();
 
-            meta.name.unwrap_or(String::from("Unknown"))
+            meta.name.unwrap_or_else(|| String::from("Unknown"))
         })
         .collect();
 

@@ -4,7 +4,7 @@ use actix_web::{get, web::Data as WebData, HttpRequest, HttpResponse, Responder}
 use chrono::prelude::*;
 use futures::{future::BoxFuture, FutureExt, StreamExt};
 use kube::{
-    api::{Api, ListParams, ResourceExt},
+    api::{Api, ListParams},
     client::Client,
     runtime::{
         controller::{Action, Context, Controller},

@@ -1,5 +1,5 @@
 use super::{OAuthApi, OAuthApiPhase, OAuthApiStatus};
-use crate::{apiVersion, kubernetes::controller, Error};
+use crate::{api_version, kubernetes::controller, Error};
 use actix_web::{get, web::Data as WebData, HttpRequest, HttpResponse, Responder};
 use chrono::prelude::*;
 use futures::{future::BoxFuture, FutureExt, StreamExt};
@@ -31,7 +31,7 @@ async fn reconcile(api_service: Arc<OAuthApi>, ctx: Context<controller::Data>) -
     let api_services: Api<OAuthApi> = Api::namespaced(client, &ns);
 
     let new_status = Patch::Apply(json!({
-        "apiVersion": apiVersion(),
+        "apiVersion": api_version(),
         "kind": "OAuthApi",
         "status": OAuthApiStatus {
             phase: Some(OAuthApiPhase::Registered),

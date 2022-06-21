@@ -1,5 +1,5 @@
 use super::{OAuthConnection, OAuthConnectionPhase, OAuthConnectionStatus};
-use crate::{apiVersion, Error};
+use crate::{api_version, Error};
 use kube::{
     api::{Api, Patch, PatchParams},
     runtime::{
@@ -23,7 +23,7 @@ pub async fn none(
     let api: Api<OAuthConnection> = Api::namespaced(client.clone(), &namespace);
 
     let new_status = Patch::Apply(json!({
-        "apiVersion": apiVersion(),
+        "apiVersion": api_version(),
         "kind": "OAuthConnection",
         "status": OAuthConnectionStatus {
             phase: Some(OAuthConnectionPhase::Initializing),
