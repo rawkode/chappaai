@@ -1,19 +1,17 @@
 use super::OAuthConnection;
-use crate::apiVersion;
-use crate::oauth_connection::OAuthConnectionPhase;
-use crate::oauth_connection::OAuthConnectionStatus;
-use crate::Error;
+use crate::{
+    apiVersion,
+    oauth_connection::{OAuthConnectionPhase, OAuthConnectionStatus},
+    Error,
+};
 use k8s_openapi::api::core::v1::Secret;
-use kube::api::Patch;
-use kube::api::PatchParams;
-use kube::Client;
-use kube::ResourceExt;
 use kube::{
-    api::Api,
+    api::{Api, Patch, PatchParams},
     runtime::{
         controller::Action,
         events::{Event, EventType, Recorder},
     },
+    Client, ResourceExt,
 };
 use serde_json::json;
 use std::sync::Arc;

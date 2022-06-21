@@ -1,17 +1,15 @@
 use super::{OAuthConnection, OAuthConnectionPhase, OAuthConnectionStatus};
-use crate::kubernetes::controller;
-use crate::Error;
-use actix_web::web::Data as WebData;
-use actix_web::{get, HttpRequest, HttpResponse, Responder};
+use crate::{kubernetes::controller, Error};
+use actix_web::{get, web::Data as WebData, HttpRequest, HttpResponse, Responder};
 use chrono::prelude::*;
 use futures::{future::BoxFuture, FutureExt, StreamExt};
-use kube::runtime::reflector::Store;
 use kube::{
     api::{Api, ListParams, ResourceExt},
     client::Client,
     runtime::{
         controller::{Action, Context, Controller},
         events::Recorder,
+        reflector::Store,
     },
     Resource,
 };

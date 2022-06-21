@@ -3,8 +3,7 @@ use kube::{client, Api, CustomResource};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use crate::kubernetes::get_string_value;
-use crate::Error;
+use crate::{kubernetes::get_string_value, Error};
 
 #[derive(CustomResource, Deserialize, Serialize, Clone, Debug, JsonSchema)]
 #[kube(
