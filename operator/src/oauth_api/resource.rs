@@ -17,7 +17,7 @@ pub struct OAuthApiKind {
 }
 
 impl OAuthApi {
-    pub fn get_authorization_url(self: &Self) -> String {
+    pub fn get_authorization_url(&self) -> String {
         match &self.spec.auth {
             Some(AuthSpecs::OAuth2(spec)) => {
                 format!(
@@ -31,7 +31,7 @@ impl OAuthApi {
         }
     }
 
-    pub fn get_token_url(self: &Self) -> String {
+    pub fn get_token_url(&self) -> String {
         match &self.spec.auth {
             Some(AuthSpecs::OAuth2(spec)) => format!("{}/{}", self.spec.http.base_url, spec.token_url),
             _ => todo!(),
@@ -86,7 +86,7 @@ pub struct OAuth2Spec {
 }
 
 impl OAuth2Spec {
-    pub fn get_authorization_params(self: &Self) -> String {
+    pub fn get_authorization_params(&self) -> String {
         self.authorization_params.iter().fold(String::from(""), |acc, x| {
             format!("{}&{}={}", acc, x.key, x.value)
         })

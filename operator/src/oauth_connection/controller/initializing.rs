@@ -30,8 +30,8 @@ pub async fn initializing(
 
     let (api, secrets): (Api<OAuthConnection>, Api<Secret>) = match &namespace {
         Some(namespace) => (
-            Api::namespaced(client.clone(), &namespace),
-            Api::namespaced(client, &namespace),
+            Api::namespaced(client.clone(), namespace),
+            Api::namespaced(client, namespace),
         ),
         None => (
             Api::default_namespaced(client.clone()),
@@ -41,11 +41,11 @@ pub async fn initializing(
 
     match oauth_connection.spec.load_client_keys(secrets).await {
         Ok(secret) => secret,
-        Err(e) => {
+        Err(_e) => {
             recorder
                 .publish(Event {
                     type_: EventType::Warning,
-                    reason: format!("❌ Client ID/Secret unavailable"),
+                    reason: "❌ Client ID/Secret unavailable".to_string(),
                     note: Some("Failed to initialize".into()),
                     action: "Initializing".into(),
                     secondary: None,
@@ -73,7 +73,7 @@ pub async fn initializing(
     recorder
         .publish(Event {
             type_: EventType::Normal,
-            reason: format!("✅ Client ID/Secret available"),
+            reason: "✅ Client ID/Secret available".to_string(),
             note: Some("Initialized. Moving to Disconnected".into()),
             action: "Disconnected".into(),
             secondary: None,

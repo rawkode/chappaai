@@ -1,22 +1,19 @@
-use std::collections::HashMap;
+
 
 use crate::{
-    apiVersion,
-    oauth_connection::{OAuthConnectionPhase, OAuthConnectionStatus},
+    oauth_connection::{OAuthConnectionStatus},
     ApiData,
 };
 use actix_web::{get, web, HttpRequest, HttpResponse};
 use k8s_openapi::api::core::v1::Secret;
 use kube::{
-    api::{Patch, PatchParams},
     Api,
 };
 use oauth2::{
-    basic::BasicClient, AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken, RedirectUrl,
-    RevocationUrl, Scope, TokenResponse, TokenUrl,
+    basic::BasicClient, AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken, RedirectUrl, Scope, TokenResponse, TokenUrl,
 };
 use serde::{Deserialize, Serialize};
-use serde_json::json;
+
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 struct OAuthConnectionWeb {
@@ -46,7 +43,7 @@ pub async fn list(data: web::Data<ApiData>) -> HttpResponse {
 }
 
 #[get("/oauth/connections/{name}")]
-pub async fn connect(req: HttpRequest, path: web::Path<(String)>, data: web::Data<ApiData>) -> HttpResponse {
+pub async fn connect(_req: HttpRequest, path: web::Path<String>, data: web::Data<ApiData>) -> HttpResponse {
     let oauth_connection_name = path.into_inner();
 
     let oacs = data.oauth_connections.state();
@@ -73,7 +70,7 @@ pub async fn connect(req: HttpRequest, path: web::Path<(String)>, data: web::Dat
 
     let (client_id, client_secret) = match oac.spec.load_client_keys(secrets).await {
         Ok(secret) => secret,
-        Err(e) => return HttpResponse::NotFound().finish(),
+        Err(_e) => return HttpResponse::NotFound().finish(),
     };
 
     let auth_url = AuthUrl::new(oaa.get_authorization_url()).unwrap();
@@ -91,11 +88,11 @@ pub async fn connect(req: HttpRequest, path: web::Path<(String)>, data: web::Dat
 
     let oauth_client = oauth_client.authorize_url(|| CsrfToken::new(String::from("abc")));
 
-    let oauth_client = oac.spec.scopes.iter().fold(oauth_client, |mut client, scope| {
+    let oauth_client = oac.spec.scopes.iter().fold(oauth_client, |client, scope| {
         client.add_scope(Scope::new(scope.clone()))
     });
 
-    let (auth_url, csrf_token) = oauth_client.url();
+    let (auth_url, _csrf_token) = oauth_client.url();
 
     HttpResponse::TemporaryRedirect()
         .header("Location", auth_url.to_string())
@@ -111,7 +108,7 @@ pub struct OAuthResponse {
 #[get("/oauth/callback/{name}")]
 pub async fn callback(
     result: web::Query<OAuthResponse>,
-    path: web::Path<(String)>,
+    path: web::Path<String>,
     data: web::Data<ApiData>,
 ) -> HttpResponse {
     // let csrf_check = CsrfToken::new(result.state.clone());
@@ -143,7 +140,7 @@ pub async fn callback(
 
     let (client_id, client_secret) = match oac.spec.load_client_keys(secrets).await {
         Ok(secret) => secret,
-        Err(e) => return HttpResponse::NotFound().finish(),
+        Err(_e) => return HttpResponse::NotFound().finish(),
     };
 
     let auth_url = AuthUrl::new(oaa.get_authorization_url()).unwrap();

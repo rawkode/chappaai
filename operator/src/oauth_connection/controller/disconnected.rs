@@ -29,8 +29,8 @@ pub async fn disconnected(
 
     let (api, secrets): (Api<OAuthConnection>, Api<Secret>) = match &namespace {
         Some(namespace) => (
-            Api::namespaced(client.clone(), &namespace),
-            Api::namespaced(client, &namespace),
+            Api::namespaced(client.clone(), namespace),
+            Api::namespaced(client, namespace),
         ),
         None => (
             Api::default_namespaced(client.clone()),
@@ -38,9 +38,9 @@ pub async fn disconnected(
         ),
     };
 
-    let (client_id, client_secret) = match oauth_connection.spec.load_client_keys(secrets).await {
+    let (_client_id, _client_secret) = match oauth_connection.spec.load_client_keys(secrets).await {
         Ok(secret) => secret,
-        Err(e) => {
+        Err(_e) => {
             let new_status = Patch::Apply(json!({
                 "apiVersion": apiVersion(),
                 "kind": "OAuthConnection",
@@ -58,7 +58,7 @@ pub async fn disconnected(
             recorder
                 .publish(Event {
                     type_: EventType::Warning,
-                    reason: format!("❌ Client ID/Secret unavailable"),
+                    reason: "❌ Client ID/Secret unavailable".to_string(),
                     note: Some("Failed to initialize".into()),
                     action: "Initializing".into(),
                     secondary: None,
