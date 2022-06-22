@@ -33,7 +33,7 @@ impl Manager {
     /// This returns a `Manager` that drives a `Controller` + a future to be awaited
     /// It is up to `main` to wait for the controller stream.
     pub async fn new(client: Client) -> (Self, Store<OAuthApi>, BoxFuture<'static, ()>) {
-        let state = Arc::new(RwLock::new(controller::State::new(String::from("oauth-api"))));
+        let state = Arc::new(RwLock::new(controller::State::new(String::from("oauth-apis"))));
         let context = Context::new(controller::Data {
             client: client.clone(),
             state: state.clone(),

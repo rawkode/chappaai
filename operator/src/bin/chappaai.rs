@@ -40,7 +40,7 @@ async fn main() -> std::io::Result<()> {
             .service(oauth_connection::api::connect)
             .service(oauth_connection::api::callback)
     })
-    .bind("0.0.0.0:4370")?;
+    .bind("0.0.0.0:4640")?;
 
     tokio::select! {
         _ = oauth_api_controller => warn!("controller drained"),

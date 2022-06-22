@@ -60,11 +60,14 @@ pub struct SecretRef {
 pub enum OAuthConnectionPhase {
     Initializing,
     Disconnected,
+    Connected,
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug, Default, JsonSchema)]
 pub struct OAuthConnectionStatus {
     pub phase: Option<OAuthConnectionPhase>,
+    pub secret_name: Option<String>,
+    pub expires_at: Option<String>,
 }
 
 impl From<&OAuthConnectionPhase> for String {
@@ -72,6 +75,7 @@ impl From<&OAuthConnectionPhase> for String {
         match phase {
             OAuthConnectionPhase::Initializing => "Initializing".to_string(),
             OAuthConnectionPhase::Disconnected => "Disconnected".to_string(),
+            OAuthConnectionPhase::Connected => "Connected".to_string(),
         }
     }
 }

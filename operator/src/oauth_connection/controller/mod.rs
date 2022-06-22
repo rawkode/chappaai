@@ -23,11 +23,13 @@ mod initializing;
 use initializing::initializing;
 mod disconnected;
 use disconnected::disconnected;
+mod connected;
+use connected::connect;
 
 #[derive(Clone)]
 pub struct Manager {
     /// Client
-    pub client: kube::Client,
+    client: kube::Client,
 
     /// In memory state
     state: Arc<RwLock<controller::State>>,
@@ -40,7 +42,9 @@ impl Manager {
     /// This returns a `Manager` that drives a `Controller` + a future to be awaited
     /// It is up to `main` to wait for the controller stream.
     pub async fn new(client: Client) -> (Self, Store<OAuthConnection>, BoxFuture<'static, ()>) {
-        let state = Arc::new(RwLock::new(controller::State::new(String::from("oauth-api"))));
+        let state = Arc::new(RwLock::new(controller::State::new(String::from(
+            "oauth-connections",
+        ))));
         let context = Context::new(controller::Data {
             client: client.clone(),
             state: state.clone(),
@@ -66,6 +70,11 @@ impl Manager {
             .boxed();
 
         (Self { client, state }, store, drainer)
+    }
+
+    /// Client getter
+    pub async fn client(&self) -> kube::Client {
+        self.client.clone()
     }
 
     /// State getter
@@ -94,6 +103,7 @@ async fn reconcile(
             Some(phase) => match &phase {
                 OAuthConnectionPhase::Initializing => initializing(client, recorder, oauth_connection).await,
                 OAuthConnectionPhase::Disconnected => disconnected(client, recorder, oauth_connection).await,
+                OAuthConnectionPhase::Connected => connect(client, recorder, oauth_connection).await,
             },
             None => none(client, recorder, oauth_connection).await,
         },

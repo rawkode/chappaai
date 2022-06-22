@@ -59,6 +59,8 @@ pub async fn initializing(
         "kind": "OAuthConnection",
         "status": OAuthConnectionStatus {
             phase: Some(OAuthConnectionPhase::Disconnected),
+            expires_at: None,
+            secret_name: None,
         }
     }));
 

@@ -30,6 +30,8 @@ pub async fn none(
         "kind": "OAuthConnection",
         "status": OAuthConnectionStatus {
             phase: Some(OAuthConnectionPhase::Initializing),
+                        expires_at: None,
+                        secret_name: None,
         }
     }));
 
