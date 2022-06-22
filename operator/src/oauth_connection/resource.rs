@@ -16,9 +16,9 @@ use crate::Error;
 )]
 #[serde(rename_all = "camelCase")]
 pub struct OAuthConnectionSpec {
-    api: String,
-    scopes: Vec<String>,
-    credentials: CredentialOptions,
+    pub api: String,
+    pub scopes: Vec<String>,
+    pub credentials: CredentialOptions,
 }
 
 impl OAuthConnectionSpec {
@@ -49,13 +49,13 @@ impl OAuthConnectionSpec {
 
 #[derive(Deserialize, Serialize, Clone, Debug, JsonSchema)]
 #[serde(rename_all = "camelCase")]
-enum CredentialOptions {
+pub enum CredentialOptions {
     SecretRef(SecretRef),
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug, JsonSchema)]
 #[serde(rename_all = "camelCase")]
-struct SecretRef {
+pub struct SecretRef {
     namespace: Option<String>,
     name: String,
     id_key: String,
@@ -71,4 +71,13 @@ pub enum OAuthConnectionPhase {
 #[derive(Deserialize, Serialize, Clone, Debug, Default, JsonSchema)]
 pub struct OAuthConnectionStatus {
     pub phase: Option<OAuthConnectionPhase>,
+}
+
+impl From<&OAuthConnectionPhase> for String {
+    fn from(phase: &OAuthConnectionPhase) -> Self {
+        match phase {
+            OAuthConnectionPhase::Initializing => "Initializing".to_string(),
+            OAuthConnectionPhase::Disconnected => "Disconnected".to_string(),
+        }
+    }
 }

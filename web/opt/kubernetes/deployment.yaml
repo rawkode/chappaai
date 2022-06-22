@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chappaai-web
+spec:
+  selector:
+    matchLabels:
+      app: chappaai-web
+  template:
+    metadata:
+      labels:
+        app: chappaai-web
+    spec:
+      containers:
+        - name: chappaai-web
+          resources:
+            limits:
+              memory: "128Mi"
+              cpu: "500m"
+          ports:
+            - containerPort: 3000

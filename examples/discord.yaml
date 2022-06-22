@@ -5,8 +5,8 @@ metadata:
 spec:
   auth:
     oAuth2:
-      authorizationUrl: "https://discord.com/api/oauth2/authorize"
-      tokenUrl: "https://discord.com/api/oauth2/token"
+      authorizationUrl: "/oauth2/authorize"
+      tokenUrl: "/oauth2/token"
       authorizationParams:
         - key: responseType
           value: code
@@ -28,7 +28,7 @@ metadata:
 spec:
   api: discord
   scopes:
-    - "identity"
+    - "identify"
     - "email"
   credentials:
     secretRef:
@@ -42,5 +42,5 @@ kind: Secret
 metadata:
   name: oauth-connection-discord
 stringData:
-  clientI: "ID"
-  clientecret: "SECRET"
+  clientId: ""
+  clientSecret: ""

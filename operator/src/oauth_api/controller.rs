@@ -71,6 +71,8 @@ fn error_policy(error: &Error, _: Context<controller::Data>) -> Action {
 
 #[derive(Clone)]
 pub struct Manager {
+    /// Client
+    pub client: kube::Client,
     /// In memory state
     state: Arc<RwLock<controller::State>>,
 }
@@ -89,7 +91,7 @@ impl Manager {
             state: state.clone(),
         });
 
-        let api_services = Api::<OAuthApi>::all(client);
+        let api_services = Api::<OAuthApi>::all(client.clone());
 
         // Ensure CRD is installed before loop-watching
         let _r = api_services
@@ -108,7 +110,14 @@ impl Manager {
             .for_each(|_| futures::future::ready(()))
             .boxed();
 
-        (Self { state }, store, drainer)
+        (
+            Self {
+                client: client.clone(),
+                state,
+            },
+            store,
+            drainer,
+        )
     }
 
     /// State getter

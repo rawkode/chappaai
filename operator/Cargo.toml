@@ -32,6 +32,8 @@ thiserror = "1.0.30"
 tracing = "0.1.32"
 tracing-opentelemetry = "0.17.2"
 rcgen = "0.9.2"
+reqwest = "0.11.11"
+actix-cors = "0.6.1"
 
 [dependencies.k8s-openapi]
 version = "=0.14.0"

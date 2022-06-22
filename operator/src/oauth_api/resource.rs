@@ -12,23 +12,46 @@ use serde::{Deserialize, Serialize};
 )]
 #[serde(rename_all = "camelCase")]
 pub struct OAuthApiKind {
-    auth: Option<AuthSpecs>,
-    http: HttpApi,
+    pub auth: Option<AuthSpecs>,
+    pub http: HttpApi,
+}
+
+impl OAuthApi {
+    pub fn get_authorization_url(self: &Self) -> String {
+        match &self.spec.auth {
+            Some(AuthSpecs::OAuth2(spec)) => {
+                format!(
+                    "{}/{}?{}",
+                    self.spec.http.base_url,
+                    spec.authorization_url,
+                    spec.get_authorization_params()
+                )
+            }
+            _ => todo!(),
+        }
+    }
+
+    pub fn get_token_url(self: &Self) -> String {
+        match &self.spec.auth {
+            Some(AuthSpecs::OAuth2(spec)) => format!("{}/{}", self.spec.http.base_url, spec.token_url),
+            _ => todo!(),
+        }
+    }
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug, Default, JsonSchema)]
 #[serde(rename_all = "camelCase")]
-struct HttpApi {
-    base_url: String,
-    authorization_header_prefix: Option<String>,
+pub struct HttpApi {
+    pub base_url: String,
+    pub authorization_header_prefix: Option<String>,
 
     #[serde(default)]
-    headers: Vec<HttpHeaders>,
+    pub headers: Vec<HttpHeaders>,
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug, JsonSchema)]
 #[serde(rename_all = "camelCase")]
-struct HttpHeaders {
+pub struct HttpHeaders {
     key: String,
     value: String,
 }
@@ -52,25 +75,33 @@ pub enum AuthSpecs {
 #[derive(Deserialize, Serialize, Clone, Debug, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct OAuth2Spec {
-    authorization_url: String,
+    pub authorization_url: String,
     #[serde(default)]
-    authorization_params: Vec<AuthorizationParams>,
+    pub authorization_params: Vec<AuthorizationParams>,
 
-    refresh_url: Option<String>,
+    pub refresh_url: Option<String>,
 
-    token_url: String,
-    token_params: Option<TokenParams>,
+    pub token_url: String,
+    pub token_params: Option<TokenParams>,
+}
+
+impl OAuth2Spec {
+    pub fn get_authorization_params(self: &Self) -> String {
+        self.authorization_params.iter().fold(String::from(""), |acc, x| {
+            format!("{}&{}={}", acc, x.key, x.value)
+        })
+    }
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug, JsonSchema)]
 #[serde(rename_all = "camelCase")]
-struct AuthorizationParams {
+pub struct AuthorizationParams {
     key: String,
     value: String,
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug, JsonSchema)]
 #[serde(rename_all = "camelCase")]
-struct TokenParams {
+pub struct TokenParams {
     grant_type: String,
 }

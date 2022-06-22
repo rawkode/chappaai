@@ -10,8 +10,13 @@
 </script>
 
 <script lang="ts">
+	interface OAuthConnection {
+		name: string;
+		phase: string;
+	}
+
 	export let apis: string[];
-	export let connections: string[];
+	export let connections: OAuthConnection[];
 </script>
 
 <div class="container mx-auto mt-4">
@@ -25,8 +30,11 @@
 	<h2>Connections</h2>
 	{#each connections as connection}
 		<div class="hover:bg-gray-200 cursor-pointer px-6 py-2 border-b border-gray-500">
-			<h4 class="font-bold">{connection}</h4>
-			<p class="text-gray-500">Disconnected - <a href="#">Connect</a></p>
+			<h4 class="font-bold">{connection.name}</h4>
+			<p class="text-gray-500">
+				{connection.phase} -
+				<a href="http://127.0.0.1:7979/oauth/connections/{connection.name}">Connect</a>
+			</p>
 		</div>
 	{/each}
 </div>

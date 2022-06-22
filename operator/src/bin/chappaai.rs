@@ -1,3 +1,4 @@
+use actix_cors::Cors;
 use actix_web::HttpServer;
 use actix_web::{middleware, web, web::Data, App};
 use chappaai::oauth_api;
@@ -31,7 +32,13 @@ async fn main() -> std::io::Result<()> {
     .shutdown_timeout(5);
 
     let s2 = HttpServer::new(move || {
+        let cors = Cors::default()
+            .allowed_origin("http://localhost:3000")
+            .allowed_methods(vec!["GET", "POST"])
+            .max_age(3600);
+
         App::new()
+            .wrap(cors)
             .app_data(web::Data::new(ApiData {
                 oauth_apis: oauth_api_store.clone(),
                 oauth_connections: oauth_connection_store.clone(),
@@ -39,6 +46,7 @@ async fn main() -> std::io::Result<()> {
             .service(oauth_api::api::list)
             .service(oauth_connection::api::list)
             .service(oauth_connection::api::connect)
+            .service(oauth_connection::api::callback)
     })
     .bind("0.0.0.0:7979")?;
 
