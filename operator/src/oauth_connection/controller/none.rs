@@ -1,5 +1,5 @@
 use super::{OAuthConnection, OAuthConnectionPhase, OAuthConnectionStatus};
-use crate::apiVersion;
+use crate::api_version;
 use crate::Error;
 use kube::Client;
 use kube::ResourceExt;
@@ -20,21 +20,24 @@ pub async fn none(
     oauth_connection: Arc<OAuthConnection>,
 ) -> Result<Action, Error> {
     let name = oauth_connection.name();
-    let namespace = oauth_connection.namespace().expect("Namespace is required");
+    let namespace = oauth_connection.namespace();
 
-    let api: Api<OAuthConnection> = Api::namespaced(client.clone(), &namespace);
+    let api: Api<OAuthConnection> = match &namespace {
+        Some(namespace) => Api::namespaced(client, namespace),
+        None => Api::default_namespaced(client),
+    };
 
     let new_status = Patch::Apply(json!({
-        "apiVersion": apiVersion(),
+        "apiVersion": api_version(),
         "kind": "OAuthConnection",
         "status": OAuthConnectionStatus {
             phase: Some(OAuthConnectionPhase::Initializing),
         }
     }));
 
-    let ps = PatchParams::apply("cntrlr").force();
-    let _o = api
-        .patch_status(&name, &ps, &new_status)
+    let patch_params = PatchParams::apply("chappaai").force();
+    let _ = api
+        .patch_status(&name, &patch_params, &new_status)
         .await
         .map_err(Error::KubeError)?;
 
@@ -49,7 +52,7 @@ pub async fn none(
         .await
         .map_err(Error::KubeError)?;
 
-    info!("Reconciled Foo \"{}\" in {}", name, namespace);
+    info!("Reconciled OAuthConnection {}", name);
 
     Ok(Action::await_change())
 }

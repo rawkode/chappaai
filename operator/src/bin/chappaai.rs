@@ -1,6 +1,6 @@
 use actix_cors::Cors;
 use actix_web::HttpServer;
-use actix_web::{middleware, web, web::Data, App};
+use actix_web::{middleware, web, App};
 use chappaai::oauth_api;
 use chappaai::oauth_connection;
 use chappaai::ApiData;
@@ -16,30 +16,25 @@ async fn main() -> std::io::Result<()> {
     let collector = Registry::default().with(logger).with(env_filter);
     tracing::subscriber::set_global_default(collector).unwrap();
 
-    let (oauth_api_manager, oauth_api_store, oauth_api_controller) = oauth_api::Manager::new().await;
+    let client = kube::Client::try_default()
+        .await
+        .expect("Couldn't create Kubernetes client");
+
+    let (_, oauth_api_store, oauth_api_controller) = oauth_api::Manager::new(client.clone()).await;
     let (_, oauth_connection_store, oauth_connection_controller) =
-        crate::oauth_connection::Manager::new().await;
+        crate::oauth_connection::Manager::new(client.clone()).await;
 
-    let oauth_api_process = HttpServer::new(move || {
-        App::new()
-            .app_data(Data::new(oauth_api_manager.clone()))
-            .wrap(middleware::Logger::default().exclude("/health"))
-            .service(oauth_api::index)
-            .service(oauth_api::health)
-    })
-    .bind("0.0.0.0:8080")
-    .expect("Can not bind to 0.0.0.0:8080")
-    .shutdown_timeout(5);
-
-    let s2 = HttpServer::new(move || {
+    let api = HttpServer::new(move || {
         let cors = Cors::default()
-            .allowed_origin("http://localhost:3000")
-            .allowed_methods(vec!["GET", "POST"])
+            .allowed_origin("http://localhost:4369")
+            .allowed_origin("http://127.0.0.1:4369")
+            .allowed_methods(vec!["GET"])
             .max_age(3600);
 
         App::new()
             .wrap(cors)
             .app_data(web::Data::new(ApiData {
+                client: client.clone(),
                 oauth_apis: oauth_api_store.clone(),
                 oauth_connections: oauth_connection_store.clone(),
             }))
@@ -48,13 +43,12 @@ async fn main() -> std::io::Result<()> {
             .service(oauth_connection::api::connect)
             .service(oauth_connection::api::callback)
     })
-    .bind("0.0.0.0:7979")?;
+    .bind("0.0.0.0:4370")?;
 
     tokio::select! {
         _ = oauth_api_controller => warn!("controller drained"),
         _ = oauth_connection_controller => warn!("controller drained"),
-        _ = oauth_api_process.run() => info!("actix exited"),
-        _ = s2.run() => info!("actix exited"),
+        _ = api.run() => info!("actix exited"),
     }
 
     Ok(())

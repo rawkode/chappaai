@@ -10,11 +10,12 @@ use crate::oauth_connection::OAuthConnection;
 const RESOURCE_NAMESPACE: &str = "chappaai.dev";
 const RESOURCE_VERSION: &str = "v1";
 
-fn apiVersion() -> String {
+fn api_version() -> String {
     format!("{}/{}", RESOURCE_NAMESPACE, RESOURCE_VERSION)
 }
 
 pub struct ApiData {
+    pub client: kube::Client,
     pub oauth_apis: Store<OAuthApi>,
     pub oauth_connections: Store<OAuthConnection>,
 }

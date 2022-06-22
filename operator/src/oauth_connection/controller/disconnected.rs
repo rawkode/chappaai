@@ -1,5 +1,5 @@
 use super::OAuthConnection;
-use crate::apiVersion;
+use crate::api_version;
 use crate::oauth_connection::OAuthConnectionPhase;
 use crate::oauth_connection::OAuthConnectionStatus;
 use crate::Error;
@@ -38,20 +38,20 @@ pub async fn disconnected(
         ),
     };
 
-    let (_client_id, _client_secret) = match oauth_connection.spec.load_client_keys(secrets).await {
+    let (_client_id, _client_secret) = match oauth_connection.load_client_keys(secrets).await {
         Ok(secret) => secret,
         Err(_e) => {
             let new_status = Patch::Apply(json!({
-                "apiVersion": apiVersion(),
+                "apiVersion": api_version(),
                 "kind": "OAuthConnection",
                 "status": OAuthConnectionStatus {
                     phase: Some(OAuthConnectionPhase::Initializing),
                 }
             }));
 
-            let ps = PatchParams::apply("cntrlr").force();
-            let _o = api
-                .patch_status(&name, &ps, &new_status)
+            let patch_params = PatchParams::apply("chappaai").force();
+            let _ = api
+                .patch_status(&name, &patch_params, &new_status)
                 .await
                 .map_err(Error::KubeError)?;
 

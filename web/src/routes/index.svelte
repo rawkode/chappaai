@@ -33,7 +33,7 @@
 			<h4 class="font-bold">{connection.name}</h4>
 			<p class="text-gray-500">
 				{connection.phase} -
-				<a href="http://127.0.0.1:7979/oauth/connections/{connection.name}">Connect</a>
+				<a href="http://127.0.0.1:4641/oauth/connections/{connection.name}">Connect</a>
 			</p>
 		</div>
 	{/each}

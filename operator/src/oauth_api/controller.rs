@@ -1,9 +1,7 @@
 use super::{OAuthApi, OAuthApiPhase, OAuthApiStatus};
-use crate::apiVersion;
+use crate::api_version;
 use crate::kubernetes::controller;
 use crate::Error;
-use actix_web::web::Data as WebData;
-use actix_web::{get, HttpRequest, HttpResponse, Responder};
 use chrono::prelude::*;
 use futures::{future::BoxFuture, FutureExt, StreamExt};
 use kube::runtime::reflector::Store;
@@ -21,58 +19,11 @@ use std::sync::Arc;
 use tokio::{sync::RwLock, time::Duration};
 use tracing::{info, warn};
 
-async fn reconcile(api_service: Arc<OAuthApi>, ctx: Context<controller::Data>) -> Result<Action, Error> {
-    let client = ctx.get_ref().client.clone();
-    ctx.get_ref().state.write().await.last_event = Utc::now();
-
-    let reporter = ctx.get_ref().state.read().await.reporter.clone();
-    let recorder = Recorder::new(client.clone(), reporter, api_service.object_ref(&()));
-
-    let name = ResourceExt::name(api_service.as_ref());
-    let ns = ResourceExt::namespace(api_service.as_ref()).expect("foo is namespaced");
-
-    let api_services: Api<OAuthApi> = Api::namespaced(client, &ns);
-
-    let new_status = Patch::Apply(json!({
-        "apiVersion": apiVersion(),
-        "kind": "OAuthApi",
-        "status": OAuthApiStatus {
-            phase: Some(OAuthApiPhase::Registered),
-        }
-    }));
-
-    let ps = PatchParams::apply("cntrlr").force();
-    let _o = api_services
-        .patch_status(&name, &ps, &new_status)
-        .await
-        .map_err(Error::KubeError)?;
-
-    recorder
-        .publish(Event {
-            type_: EventType::Normal,
-            reason: "ApiService".into(),
-            note: Some(format!("All good in the western front `{}` to detention", name)),
-            action: "Registered".into(),
-            secondary: None,
-        })
-        .await
-        .map_err(Error::KubeError)?;
-
-    info!("Reconciled Foo \"{}\" in {}", name, ns);
-
-    // If no events were received, check back every 30 minutes
-    Ok(Action::requeue(Duration::from_secs(30 * 60)))
-}
-
-fn error_policy(error: &Error, _: Context<controller::Data>) -> Action {
-    warn!("reconcile failed: {:?}", error);
-    Action::requeue(Duration::from_secs(5 * 60))
-}
-
 #[derive(Clone)]
 pub struct Manager {
     /// Client
     pub client: kube::Client,
+
     /// In memory state
     state: Arc<RwLock<controller::State>>,
 }
@@ -83,8 +34,7 @@ impl Manager {
     ///
     /// This returns a `Manager` that drives a `Controller` + a future to be awaited
     /// It is up to `main` to wait for the controller stream.
-    pub async fn new() -> (Self, Store<OAuthApi>, BoxFuture<'static, ()>) {
-        let client = Client::try_default().await.expect("create client");
+    pub async fn new(client: Client) -> (Self, Store<OAuthApi>, BoxFuture<'static, ()>) {
         let state = Arc::new(RwLock::new(controller::State::new(String::from("oauth-api"))));
         let context = Context::new(controller::Data {
             client: client.clone(),
@@ -94,14 +44,13 @@ impl Manager {
         let api_services = Api::<OAuthApi>::all(client.clone());
 
         // Ensure CRD is installed before loop-watching
-        let _r = api_services
+        let _ = api_services
             .list(&ListParams::default().limit(1))
             .await
             .expect("is the crd installed? please run: cargo run --bin crdgen | kubectl apply -f -");
 
         // All good. Start controller and return its future.
         let drainer = Controller::new(api_services, ListParams::default());
-
         let store = drainer.store();
 
         let drainer = drainer
@@ -110,14 +59,7 @@ impl Manager {
             .for_each(|_| futures::future::ready(()))
             .boxed();
 
-        (
-            Self {
-                client: client.clone(),
-                state,
-            },
-            store,
-            drainer,
-        )
+        (Self { client, state }, store, drainer)
     }
 
     /// State getter
@@ -126,13 +68,51 @@ impl Manager {
     }
 }
 
-#[get("/health")]
-pub async fn health(_: HttpRequest) -> impl Responder {
-    HttpResponse::Ok().json("healthy")
+fn error_policy(error: &Error, _: Context<controller::Data>) -> Action {
+    warn!("reconcile failed: {:?}. Will try again in 5 minutes", error);
+    Action::requeue(Duration::from_secs(5 * 60))
 }
 
-#[get("/")]
-pub async fn index(c: WebData<Manager>, _req: HttpRequest) -> impl Responder {
-    let state = c.state().await;
-    HttpResponse::Ok().json(&state)
+async fn reconcile(api_service: Arc<OAuthApi>, ctx: Context<controller::Data>) -> Result<Action, Error> {
+    let client = ctx.get_ref().client.clone();
+    ctx.get_ref().state.write().await.last_event = Utc::now();
+
+    let reporter = ctx.get_ref().state.read().await.reporter.clone();
+    let recorder = Recorder::new(client.clone(), reporter, api_service.object_ref(&()));
+
+    let name = api_service.name();
+    let namespace = api_service.namespace();
+
+    let api_services: Api<OAuthApi> = match namespace {
+        Some(namespace) => Api::namespaced(client, &namespace),
+        None => Api::default_namespaced(client),
+    };
+
+    let new_status = Patch::Apply(json!({
+        "apiVersion": api_version(),
+        "kind": "OAuthApi",
+        "status": OAuthApiStatus {
+            phase: Some(OAuthApiPhase::Registered),
+        }
+    }));
+
+    let _ = api_services
+        .patch_status(&name, &PatchParams::apply("chappaai").force(), &new_status)
+        .await
+        .map_err(Error::KubeError)?;
+
+    recorder
+        .publish(Event {
+            type_: EventType::Normal,
+            action: "Registered".into(),
+            secondary: None,
+            reason: "Successfully registered OAuthAPI".into(),
+            note: None,
+        })
+        .await
+        .map_err(Error::KubeError)?;
+
+    info!("Reconciled OAuthAPI: \"{}\"", name);
+
+    Ok(Action::await_change())
 }

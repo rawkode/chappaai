@@ -1,19 +1,12 @@
-
-
-use crate::{
-    oauth_connection::{OAuthConnectionStatus},
-    ApiData,
-};
+use crate::{oauth_connection::OAuthConnectionStatus, ApiData};
 use actix_web::{get, web, HttpRequest, HttpResponse};
 use k8s_openapi::api::core::v1::Secret;
-use kube::{
-    Api,
-};
+use kube::Api;
 use oauth2::{
-    basic::BasicClient, AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken, RedirectUrl, Scope, TokenResponse, TokenUrl,
+    basic::BasicClient, AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken, RedirectUrl, Scope,
+    TokenResponse, TokenUrl,
 };
 use serde::{Deserialize, Serialize};
-
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 struct OAuthConnectionWeb {
@@ -65,10 +58,10 @@ pub async fn connect(_req: HttpRequest, path: web::Path<String>, data: web::Data
         None => return HttpResponse::NotFound().finish(),
     };
 
-    let client = kube::Client::try_default().await.expect("create client");
+    let client = data.client.clone();
     let secrets: Api<Secret> = Api::default_namespaced(client);
 
-    let (client_id, client_secret) = match oac.spec.load_client_keys(secrets).await {
+    let (client_id, client_secret) = match oac.load_client_keys(secrets).await {
         Ok(secret) => secret,
         Err(_e) => return HttpResponse::NotFound().finish(),
     };
@@ -99,7 +92,7 @@ pub async fn connect(_req: HttpRequest, path: web::Path<String>, data: web::Data
         .finish()
 }
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Deserialize)]
 pub struct OAuthResponse {
     code: String,
     state: String,
@@ -135,10 +128,10 @@ pub async fn callback(
         None => return HttpResponse::NotFound().finish(),
     };
 
-    let client = kube::Client::try_default().await.expect("create client");
+    let client = data.client.clone();
     let secrets: Api<Secret> = Api::default_namespaced(client);
 
-    let (client_id, client_secret) = match oac.spec.load_client_keys(secrets).await {
+    let (client_id, client_secret) = match oac.load_client_keys(secrets).await {
         Ok(secret) => secret,
         Err(_e) => return HttpResponse::NotFound().finish(),
     };

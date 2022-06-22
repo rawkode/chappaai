@@ -1,10 +1,9 @@
-use k8s_openapi::{api::core::v1::Secret};
+use crate::kubernetes::get_string_value;
+use crate::Error;
+use k8s_openapi::api::core::v1::Secret;
 use kube::{Api, CustomResource};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-
-use crate::kubernetes::get_string_value;
-use crate::Error;
 
 #[derive(CustomResource, Deserialize, Serialize, Clone, Debug, JsonSchema)]
 #[kube(
@@ -21,9 +20,9 @@ pub struct OAuthConnectionSpec {
     pub credentials: CredentialOptions,
 }
 
-impl OAuthConnectionSpec {
+impl OAuthConnection {
     pub async fn load_client_keys(&self, secrets: Api<Secret>) -> Result<(String, String), Error> {
-        match &self.credentials {
+        match &self.spec.credentials {
             CredentialOptions::SecretRef(secret_ref) => {
                 let secret = secrets.get(&secret_ref.name).await.map_err(Error::KubeError)?;
 
@@ -32,14 +31,10 @@ impl OAuthConnectionSpec {
                     Err(error) => return Err(error),
                 };
 
-                println!("Successfully got the cvlient id {}", client_id);
-
                 let client_secret = match get_string_value(&secret, &secret_ref.secret_key) {
                     Ok(value) => value,
                     Err(error) => return Err(error),
                 };
-
-                println!("Successfully got the client secret {}", client_secret);
 
                 Ok((client_id, client_secret))
             }

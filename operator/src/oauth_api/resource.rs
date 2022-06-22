@@ -11,9 +11,9 @@ use serde::{Deserialize, Serialize};
     namespaced
 )]
 #[serde(rename_all = "camelCase")]
-pub struct OAuthApiKind {
-    pub auth: Option<AuthSpecs>,
+pub struct OAuthApiSpec {
     pub http: HttpApi,
+    pub auth: Option<AuthSpecs>,
 }
 
 impl OAuthApi {

@@ -1,5 +1,5 @@
 use super::OAuthConnection;
-use crate::apiVersion;
+use crate::api_version;
 use crate::oauth_connection::OAuthConnectionPhase;
 use crate::oauth_connection::OAuthConnectionStatus;
 use crate::Error;
@@ -39,7 +39,7 @@ pub async fn initializing(
         ),
     };
 
-    match oauth_connection.spec.load_client_keys(secrets).await {
+    match oauth_connection.load_client_keys(secrets).await {
         Ok(secret) => secret,
         Err(_e) => {
             recorder
@@ -57,16 +57,16 @@ pub async fn initializing(
     };
 
     let new_status = Patch::Apply(json!({
-        "apiVersion": apiVersion(),
+        "apiVersion": api_version(),
         "kind": "OAuthConnection",
         "status": OAuthConnectionStatus {
             phase: Some(OAuthConnectionPhase::Disconnected),
         }
     }));
 
-    let ps = PatchParams::apply("cntrlr").force();
-    let _o = api
-        .patch_status(&name, &ps, &new_status)
+    let patch_params = PatchParams::apply("chappaai").force();
+    let _ = api
+        .patch_status(&name, &patch_params, &new_status)
         .await
         .map_err(Error::KubeError)?;
 
@@ -81,11 +81,7 @@ pub async fn initializing(
         .await
         .map_err(Error::KubeError)?;
 
-    info!(
-        "Reconciled Foo \"{}\" in {}",
-        name,
-        &namespace.unwrap_or(String::from("in-cluster"))
-    );
+    info!("Reconciled OAuthConnection {}", name,);
 
     Ok(Action::requeue(Duration::from_secs(60)))
 }
