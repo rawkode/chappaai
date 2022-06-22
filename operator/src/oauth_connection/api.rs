@@ -23,7 +23,7 @@ pub async fn list(data: web::Data<ApiData>) -> HttpResponse {
             let meta = service.metadata.clone();
 
             OAuthConnectionWeb {
-                name: meta.name.unwrap_or(String::from("Unknown")),
+                name: meta.name.unwrap_or_else(|| String::from("Unknown")),
                 phase: match &service.status {
                     Some(OAuthConnectionStatus { phase: Some(phase) }) => phase.into(),
                     _ => String::from("Status and phase not known"),
@@ -44,7 +44,7 @@ pub async fn connect(_req: HttpRequest, path: web::Path<String>, data: web::Data
 
     let oac = match oacs
         .iter()
-        .find(|c| &c.metadata.name.clone().unwrap_or(String::from("Unknown")) == &oauth_connection_name)
+        .find(|c| c.metadata.name.clone().unwrap_or_else(|| String::from("Unknown")) == oauth_connection_name)
     {
         Some(c) => c.as_ref(),
         None => return HttpResponse::NotFound().finish(),
@@ -52,7 +52,7 @@ pub async fn connect(_req: HttpRequest, path: web::Path<String>, data: web::Data
 
     let oaa = match oaas
         .iter()
-        .find(|c| &c.metadata.name.clone().unwrap_or(String::from("Unknown")) == &oac.spec.api)
+        .find(|c| c.metadata.name.clone().unwrap_or_else(|| String::from("Unknown")) == oac.spec.api)
     {
         Some(c) => c.as_ref(),
         None => return HttpResponse::NotFound().finish(),
@@ -88,13 +88,14 @@ pub async fn connect(_req: HttpRequest, path: web::Path<String>, data: web::Data
     let (auth_url, _csrf_token) = oauth_client.url();
 
     HttpResponse::TemporaryRedirect()
-        .header("Location", auth_url.to_string())
+        .append_header(("Location", auth_url.to_string()))
         .finish()
 }
 
 #[derive(Deserialize)]
 pub struct OAuthResponse {
     code: String,
+    #[allow(dead_code)]
     state: String,
 }
 
@@ -114,7 +115,7 @@ pub async fn callback(
 
     let oac = match oacs
         .iter()
-        .find(|c| &c.metadata.name.clone().unwrap_or(String::from("Unknown")) == &oauth_connection_name)
+        .find(|c| c.metadata.name.clone().unwrap_or_else(|| String::from("Unknown")) == oauth_connection_name)
     {
         Some(c) => c.as_ref(),
         None => return HttpResponse::NotFound().finish(),
@@ -122,7 +123,7 @@ pub async fn callback(
 
     let oaa = match oaas
         .iter()
-        .find(|c| &c.metadata.name.clone().unwrap_or(String::from("Unknown")) == &oac.spec.api)
+        .find(|c| c.metadata.name.clone().unwrap_or_else(|| String::from("Unknown")) == oac.spec.api)
     {
         Some(c) => c.as_ref(),
         None => return HttpResponse::NotFound().finish(),

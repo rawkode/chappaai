@@ -1,5 +1,4 @@
-pub(crate) use chappaai::oauth_api::OAuthApi;
-pub(crate) use chappaai::oauth_connection::OAuthConnection;
+pub(crate) use chappaai::{oauth_api::OAuthApi, oauth_connection::OAuthConnection};
 pub(crate) use kube::CustomResourceExt;
 
 fn main() {
