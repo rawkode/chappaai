@@ -1,16 +1,14 @@
 use super::{OAuthApi, OAuthApiPhase, OAuthApiStatus};
-use crate::api_version;
-use crate::kubernetes::controller;
-use crate::Error;
+use crate::{api_version, kubernetes::controller, Error};
 use chrono::prelude::*;
 use futures::{future::BoxFuture, FutureExt, StreamExt};
-use kube::runtime::reflector::Store;
 use kube::{
     api::{Api, ListParams, Patch, PatchParams, ResourceExt},
     client::Client,
     runtime::{
         controller::{Action, Context, Controller},
         events::{Event, EventType, Recorder},
+        reflector::Store,
     },
     Resource,
 };

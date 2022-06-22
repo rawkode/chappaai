@@ -1,5 +1,4 @@
-use crate::kubernetes::get_string_value;
-use crate::Error;
+use crate::{kubernetes::get_string_value, Error};
 use k8s_openapi::api::core::v1::Secret;
 use kube::{Api, CustomResource};
 use schemars::JsonSchema;

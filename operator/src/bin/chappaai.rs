@@ -1,9 +1,6 @@
 use actix_cors::Cors;
-use actix_web::HttpServer;
-use actix_web::{middleware, web, App};
-use chappaai::oauth_api;
-use chappaai::oauth_connection;
-use chappaai::ApiData;
+use actix_web::{web, App, HttpServer};
+use chappaai::{oauth_api, oauth_connection, ApiData};
 use tracing::{info, warn};
 use tracing_subscriber::{prelude::*, EnvFilter, Registry};
 
