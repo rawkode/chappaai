@@ -9,15 +9,15 @@ use crate::{
     oauth_connection::{OAuthConnectionPhase, OAuthConnectionStatus},
     ApiData,
 };
-use actix_web::{get, web, HttpRequest, HttpResponse};
+use actix_web::{get, web, HttpResponse};
 use chrono::{DateTime, Utc};
 use k8s_openapi::api::core::v1::Secret;
 use kube::{
-    api::{Patch, PatchParams, PostParams},
+    api::{Patch, PatchParams},
     core::ObjectMeta,
-    Api, ResourceExt,
+    Api, Resource, ResourceExt,
 };
-use kube_client::Error;
+
 use oauth2::{
     basic::BasicClient, AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken, RedirectUrl, Scope,
     TokenResponse, TokenUrl,
@@ -146,7 +146,7 @@ pub async fn callback(
         .iter()
         .find(|c| c.metadata.name.clone().unwrap_or_else(|| String::from("Unknown")) == oauth_connection_name)
     {
-        Some(c) => c.as_ref(),
+        Some(c) => c,
         None => return HttpResponse::NotFound().finish(),
     };
 
@@ -201,35 +201,38 @@ pub async fn callback(
         }
     };
 
-    let a = token.access_token().secret();
-
     let secret_name = format!("chappaai-{}", name);
+    let owner_ref = oac.controller_owner_ref(&()).unwrap();
 
     let mut string_data: BTreeMap<String, String> = BTreeMap::new();
-    string_data.insert("accessToken".to_string(), a.to_string());
+    string_data.insert(
+        "accessToken".to_string(),
+        token.access_token().secret().to_string(),
+    );
 
     let new_secret = Secret {
         metadata: ObjectMeta {
             name: Some(secret_name.clone()),
             namespace: namespace.clone(),
-            ..Default::default()
+            owner_references: Some(vec![owner_ref]),
+            ..ObjectMeta::default()
         },
         immutable: Some(false),
         string_data: Some(string_data),
-        ..Default::default()
+        ..Secret::default()
     };
 
-    let post_params = PostParams {
-        dry_run: false,
-        ..Default::default()
-    };
-
-    match secrets.create(&post_params, &new_secret).await {
+    let _ = match secrets
+        .patch(
+            secret_name.clone().as_str(),
+            &PatchParams::apply("chappaai"),
+            &Patch::Apply(new_secret),
+        )
+        .await
+    {
         Ok(_) => true,
         Err(e) => {
-            println!("Failed: {:?}", e);
-
-            false
+            panic!("Failed: {:?}", e);
         }
     };
 
@@ -262,5 +265,5 @@ pub async fn callback(
         }
     };
 
-    HttpResponse::Ok().body(a.clone())
+    HttpResponse::Ok().body("Connected")
 }
