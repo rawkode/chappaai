@@ -1,5 +1,6 @@
 use std::{
     collections::BTreeMap,
+    sync::Arc,
     time::{Duration, SystemTime},
 };
 
@@ -7,7 +8,7 @@ use super::OAuthConnection;
 use crate::{
     api_version,
     oauth_connection::{OAuthConnectionPhase, OAuthConnectionStatus},
-    ApiData,
+    ApiData, Error, OAuthApi,
 };
 use actix_web::{get, web, HttpResponse};
 use chrono::{DateTime, Utc};
@@ -64,43 +65,23 @@ pub async fn connect(
 ) -> HttpResponse {
     let oauth_connection_name = path.into_inner();
 
-    let oacs = data.oauth_connections.state();
-    let oaas = data.oauth_apis.state();
-
-    let oac = match oacs
-        .iter()
-        .find(|c| c.metadata.name.clone().unwrap_or_else(|| String::from("Unknown")) == oauth_connection_name)
-    {
-        Some(c) => c.as_ref(),
-        None => return HttpResponse::NotFound().finish(),
-    };
-
-    let oaa = match oaas
-        .iter()
-        .find(|c| c.metadata.name.clone().unwrap_or_else(|| String::from("Unknown")) == oac.spec.api)
-    {
-        Some(c) => c.as_ref(),
+    let (oac, oaa) = match oauth_connection_and_api(
+        oauth_connection_name,
+        data.oauth_connections.state(),
+        data.oauth_apis.state(),
+    ) {
+        Some(result) => result,
         None => return HttpResponse::NotFound().finish(),
     };
 
     let client = data.client.clone();
-    let secrets: Api<Secret> = Api::default_namespaced(client);
+    let secrets: Api<Secret> = Api::default_namespaced(client.clone());
 
-    let (client_id, client_secret) = match oac.load_client_keys(secrets).await {
-        Ok(secret) => secret,
-        Err(_e) => return HttpResponse::NotFound().finish(),
+    let oauth_client = match oauth_basic_client(secrets.clone(), &oac, &oaa, query.redirect_url.clone()).await
+    {
+        Ok(c) => c,
+        Err(_) => return HttpResponse::NotFound().finish(),
     };
-
-    let auth_url = AuthUrl::new(oaa.get_authorization_url()).unwrap();
-    let token_url = TokenUrl::new(oaa.get_token_url()).unwrap();
-
-    let oauth_client = BasicClient::new(
-        ClientId::new(client_id),
-        Some(ClientSecret::new(client_secret)),
-        auth_url,
-        Some(token_url),
-    )
-    .set_redirect_uri(RedirectUrl::new(query.redirect_url.clone()).unwrap());
 
     let oauth_client = oauth_client.authorize_url(|| CsrfToken::new(String::from("abc")));
 
@@ -113,6 +94,50 @@ pub async fn connect(
     HttpResponse::TemporaryRedirect()
         .append_header(("Location", auth_url.to_string()))
         .finish()
+}
+
+async fn oauth_basic_client(
+    secrets: Api<Secret>,
+    oac: &OAuthConnection,
+    oaa: &OAuthApi,
+    redirect_url: String,
+) -> Result<oauth2::basic::BasicClient, Error> {
+    let (client_id, client_secret) = oac.load_client_keys(secrets).await?;
+
+    let auth_url = AuthUrl::new(oaa.get_authorization_url()).unwrap();
+    let token_url = TokenUrl::new(oaa.get_token_url()).unwrap();
+
+    Ok(BasicClient::new(
+        ClientId::new(client_id),
+        Some(ClientSecret::new(client_secret)),
+        auth_url,
+        Some(token_url),
+    )
+    .set_redirect_uri(RedirectUrl::new(redirect_url).unwrap()))
+}
+
+fn oauth_connection_and_api(
+    oauth_connection_name: String,
+    oacs: Vec<Arc<OAuthConnection>>,
+    oaas: Vec<Arc<OAuthApi>>,
+) -> Option<(OAuthConnection, OAuthApi)> {
+    let oac: &OAuthConnection = match oacs
+        .iter()
+        .find(|c| c.metadata.name.clone().unwrap_or_else(|| String::from("Unknown")) == oauth_connection_name)
+    {
+        Some(c) => c,
+        None => return None,
+    };
+
+    let oaa: &OAuthApi = match oaas
+        .iter()
+        .find(|c| c.metadata.name.clone().unwrap_or_else(|| String::from("Unknown")) == oac.spec.api)
+    {
+        Some(c) => c,
+        None => return None,
+    };
+
+    Some((oac.to_owned(), oaa.to_owned()))
 }
 
 #[derive(Deserialize)]
@@ -139,27 +164,17 @@ pub async fn callback(
 
     let oauth_connection_name = path.into_inner();
 
-    let oacs = data.oauth_connections.state();
-    let oaas = data.oauth_apis.state();
-
-    let oac = match oacs
-        .iter()
-        .find(|c| c.metadata.name.clone().unwrap_or_else(|| String::from("Unknown")) == oauth_connection_name)
-    {
-        Some(c) => c,
+    let (oac, oaa) = match oauth_connection_and_api(
+        oauth_connection_name.clone(),
+        data.oauth_connections.state(),
+        data.oauth_apis.state(),
+    ) {
+        Some(result) => result,
         None => return HttpResponse::NotFound().finish(),
     };
 
     let name = oac.name();
     let namespace = oac.namespace();
-
-    let oaa = match oaas
-        .iter()
-        .find(|c| c.metadata.name.clone().unwrap_or_else(|| String::from("Unknown")) == oac.spec.api)
-    {
-        Some(c) => c.as_ref(),
-        None => return HttpResponse::NotFound().finish(),
-    };
 
     let client = data.client.clone();
 
@@ -174,21 +189,11 @@ pub async fn callback(
         ),
     };
 
-    let (client_id, client_secret) = match oac.load_client_keys(secrets.clone()).await {
-        Ok(secret) => secret,
-        Err(_e) => return HttpResponse::NotFound().finish(),
+    let oauth_client = match oauth_basic_client(secrets.clone(), &oac, &oaa, query.redirect_url.clone()).await
+    {
+        Ok(c) => c,
+        Err(_) => return HttpResponse::NotFound().finish(),
     };
-
-    let auth_url = AuthUrl::new(oaa.get_authorization_url()).unwrap();
-    let token_url = TokenUrl::new(oaa.get_token_url()).unwrap();
-
-    let oauth_client = BasicClient::new(
-        ClientId::new(client_id),
-        Some(ClientSecret::new(client_secret)),
-        auth_url,
-        Some(token_url),
-    )
-    .set_redirect_uri(RedirectUrl::new(query.redirect_url.clone()).unwrap());
 
     let token = match oauth_client
         .exchange_code(auth)
