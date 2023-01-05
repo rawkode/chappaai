@@ -4,6 +4,9 @@
     "enabled": true,
     "rules": {
       "recommended": true
-    }
+    },
+    "ignore": [
+      ".svelte-kit"
+    ]
   }
 }
