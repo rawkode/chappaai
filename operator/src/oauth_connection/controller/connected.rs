@@ -1,13 +1,8 @@
 use super::OAuthConnection;
-use crate::{
-    Error,
-};
+use crate::Error;
 
 use kube::{
-    runtime::{
-        controller::Action,
-        events::{Recorder},
-    },
+    runtime::{controller::Action, events::Recorder},
     Client,
 };
 

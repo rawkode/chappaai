@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chappaai
+spec:
+  selector:
+    matchLabels:
+      app: chappaai
+  template:
+    metadata:
+      labels:
+        app: chappaai
+    spec:
+      containers:
+        - name: operator
+          image: ghcr.io/rawkode/chappaai-operator:latest
+          resources:
+            limits:
+              memory: "128Mi"
+              cpu: "500m"
+        - name: web
+          image: ghcr.io/rawkode/chappaai-web:latest
+          resources:
+            limits:
+              memory: "128Mi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: chappaai
+spec:
+  selector:
+    app: chappaai
+  ports:
+    - port: 80
+      targetPort: 3000

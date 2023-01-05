@@ -9,5 +9,16 @@ RUN npm install
 COPY . ./
 RUN npm run build
 
-FROM nginx:1.19-alpine
-COPY --from=build /app/.svelte-kit/output /usr/share/nginx/html
+FROM node:18 AS deploy
+
+WORKDIR /app
+
+COPY package.json .
+COPY package-lock.json .
+
+RUN npm ci --omit=dev
+
+COPY --from=build /app/dist /app
+
+ENTRYPOINT [ "node" ]
+CMD [ "index.js" ]
