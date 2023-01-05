@@ -6,7 +6,7 @@ on:
       - "*"
 
 jobs:
-  docker:
+  build-container-images:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -42,6 +42,9 @@ jobs:
           tags: ghcr.io/rawkode/chappaai/web:${{ github.ref_name }}
           push: true
 
+  publish-crds:
+    runs-on: ubuntu-latest
+    steps:
       - name: Build CRD YAML
         run: cd operator && cargo run --bin crdgen > ../crds.yaml
 
