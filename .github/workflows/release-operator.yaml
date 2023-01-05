@@ -34,5 +34,5 @@ jobs:
         with:
           context: operator
           platforms: linux/amd64
-          tags: ghcr.io/rawkode/chappaai/operator:latest
+          tags: ghcr.io/rawkode/chappaai/operator:main
           push: true
