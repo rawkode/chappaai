@@ -13,13 +13,13 @@ spec:
     spec:
       containers:
         - name: operator
-          image: ghcr.io/rawkode/chappaai-operator:latest
+          image: ghcr.io/rawkode/chappaai/operator:latest
           resources:
             limits:
               memory: "128Mi"
               cpu: "500m"
         - name: web
-          image: ghcr.io/rawkode/chappaai-web:latest
+          image: ghcr.io/rawkode/chappaai/web:latest
           resources:
             limits:
               memory: "128Mi"
