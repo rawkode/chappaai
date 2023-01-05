@@ -34,5 +34,5 @@ jobs:
         with:
           context: web
           platforms: linux/amd64
-          tags: ghcr.io/rawkode/chappaai-web:latest
+          tags: ghcr.io/rawkode/chappaai/web:latest
           push: true
