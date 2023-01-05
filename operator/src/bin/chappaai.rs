@@ -22,14 +22,14 @@ async fn main() -> std::io::Result<()> {
         crate::oauth_connection::Manager::new(client.clone()).await;
 
     let api = HttpServer::new(move || {
-        let cors = Cors::default()
-            .allowed_origin("http://localhost:4369")
-            .allowed_origin("http://127.0.0.1:4369")
-            .allowed_methods(vec!["GET"])
-            .max_age(3600);
+        // let cors = Cors::default()
+        //     .allowed_origin("http://localhost:5137")
+        //     .allowed_origin("http://127.0.0.1:5137")
+        //     .allowed_methods(vec!["GET"])
+        //     .max_age(3600);
 
         App::new()
-            .wrap(cors)
+            // .wrap(cors)
             .app_data(web::Data::new(ApiData {
                 client: client.clone(),
                 oauth_apis: oauth_api_store.clone(),

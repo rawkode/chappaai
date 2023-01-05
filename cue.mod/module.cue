@@ -1,1 +1,0 @@
-module: "chappaai.dev/dagger"
