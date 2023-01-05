@@ -33,6 +33,6 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: operator
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           tags: ghcr.io/rawkode/chappaai-operator:latest
           push: true
