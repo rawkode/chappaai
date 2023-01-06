@@ -45,6 +45,10 @@ jobs:
   publish-crds:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
       - name: Build CRD YAML
         run: cd operator && cargo run --bin crdgen > ../crds.yaml
 
