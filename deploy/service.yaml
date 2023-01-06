@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: chappaai
+spec:
+  selector:
+    app: chappaai
+  ports:
+    - port: 80
+      targetPort: 3000

@@ -52,12 +52,6 @@ impl Manager {
 
         let api_services = Api::<OAuthConnection>::all(client.clone());
 
-        // Ensure CRD is installed before loop-watching
-        api_services
-            .list(&ListParams::default().limit(1))
-            .await
-            .expect("is the crd installed? please run: cargo run --bin crdgen | kubectl apply -f -");
-
         // All good. Start controller and return its future.
         let drainer = Controller::new(api_services, ListParams::default());
 

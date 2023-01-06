@@ -11,27 +11,17 @@ spec:
       labels:
         app: chappaai
     spec:
+      serviceAccountName: chappaai
       containers:
         - name: operator
-          image: ghcr.io/rawkode/chappaai/operator:0.0.1
+          image: ghcr.io/rawkode/chappaai/operator:0.0.2
           resources:
             limits:
               memory: "128Mi"
               cpu: "500m"
         - name: web
-          image: ghcr.io/rawkode/chappaai/web:0.0.1
+          image: ghcr.io/rawkode/chappaai/web:0.0.2
           resources:
             limits:
               memory: "128Mi"
               cpu: "500m"
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: chappaai
-spec:
-  selector:
-    app: chappaai
-  ports:
-    - port: 80
-      targetPort: 3000
