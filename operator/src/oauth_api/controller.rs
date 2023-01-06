@@ -39,7 +39,7 @@ impl Manager {
             state: state.clone(),
         });
 
-        let api_services = Api::<OAuthApi>::namespaced(client.clone(), "default");
+        let api_services = Api::<OAuthApi>::default_namespaced(client.clone());
 
         // Ensure the CRD's are installed and we have access to list them
         match api_services.list(&ListParams::default().limit(1)).await {
