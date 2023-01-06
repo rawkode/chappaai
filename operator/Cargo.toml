@@ -1,6 +1,6 @@
 [package]
 name = "chappaai"
-version = "0.0.3"
+version = "0.0.4"
 edition = "2021"
 authors = ["David Flanagan <david@rawkode.dev>"]
 default-run = "chappaai"
