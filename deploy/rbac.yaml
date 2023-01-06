@@ -9,23 +9,25 @@ kind: Role
 metadata:
   name: chappaai
 rules:
+  # Chappaai Custom Resources
+  - apiGroups:
+      - chappaai.dev
+    resources:
+      - "*"
+    verbs:
+      - "*"
+  # Ability to write events about our resources
+  - apiGroups:
+      - events.k8s.io
+    resources:
+      - events
+    verbs:
+      - create
+  # Ability to manage secrets with OAuth tokens
   - apiGroups:
       - ""
     resources:
       - secrets
-    verbs:
-      - list
-      - get
-      - create
-      - delete
-      - patch
-      - update
-      - watch
-  - apiGroups:
-      - chappaai.dev
-    resources:
-      - oauthapis
-      - oauthconnections
     verbs:
       - list
       - get
@@ -46,4 +48,3 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: chappaai
-    namespace: default

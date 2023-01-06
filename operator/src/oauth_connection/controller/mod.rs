@@ -1,6 +1,5 @@
 use super::{OAuthConnection, OAuthConnectionPhase, OAuthConnectionStatus};
 use crate::{kubernetes::controller, Error};
-
 use chrono::prelude::*;
 use futures::{future::BoxFuture, FutureExt, StreamExt};
 use kube::{
@@ -17,6 +16,7 @@ use std::sync::Arc;
 use tokio::{sync::RwLock, time::Duration};
 use tracing::warn;
 
+// Controller States
 mod none;
 use none::none;
 mod initializing;
@@ -35,22 +35,24 @@ pub struct Manager {
     state: Arc<RwLock<controller::State>>,
 }
 
-/// Example Manager that owns a Controller for Foo
 impl Manager {
-    /// Lifecycle initialization interface for app
-    ///
-    /// This returns a `Manager` that drives a `Controller` + a future to be awaited
-    /// It is up to `main` to wait for the controller stream.
     pub async fn new(client: Client) -> (Self, Store<OAuthConnection>, BoxFuture<'static, ()>) {
         let state = Arc::new(RwLock::new(controller::State::new(String::from(
             "oauth-connections",
         ))));
+
         let context = Context::new(controller::Data {
             client: client.clone(),
             state: state.clone(),
         });
 
-        let api_services = Api::<OAuthConnection>::all(client.clone());
+        let api_services = Api::<OAuthConnection>::namespaced(client.clone(), "default");
+
+        // Ensure the CRD's are installed and we have access to list them
+        api_services
+            .list(&ListParams::default().limit(1))
+            .await
+            .expect("Unable to access OAuthConnection's within the current namespace");
 
         // All good. Start controller and return its future.
         let drainer = Controller::new(api_services, ListParams::default());

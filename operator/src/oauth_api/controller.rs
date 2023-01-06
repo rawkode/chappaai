@@ -39,7 +39,13 @@ impl Manager {
             state: state.clone(),
         });
 
-        let api_services = Api::<OAuthApi>::all(client.clone());
+        let api_services = Api::<OAuthApi>::namespaced(client.clone(), "default");
+
+        // Ensure the CRD's are installed and we have access to list them
+        match api_services.list(&ListParams::default().limit(1)).await {
+            Ok(_) => println!("Successfully listed OAuthApis"),
+            Err(err) => panic!("Failed to list: {:?}", err),
+        }
 
         // All good. Start controller and return its future.
         let drainer = Controller::new(api_services, ListParams::default());
