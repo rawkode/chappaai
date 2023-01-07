@@ -7,6 +7,7 @@ use chappaai::{
     ApplicationState, Result,
 };
 
+use tracing::log::warn;
 use tracing_subscriber::{prelude::*, EnvFilter, Registry};
 
 #[tokio::main]
@@ -19,8 +20,8 @@ async fn main() -> Result<()> {
 
     let client = kube::Client::try_default().await?;
 
-    let (_, oauth_api_store, _oauth_api_controller) = oauth_api::Manager::new(client.clone()).await;
-    let (_, oauth_connection_store, _oauth_connection_controller) =
+    let (_, oauth_api_store, oauth_api_controller) = oauth_api::Manager::new(client.clone()).await;
+    let (_, oauth_connection_store, oauth_connection_controller) =
         crate::oauth_connection::Manager::new(client.clone()).await;
 
     let address = SocketAddr::from(([0, 0, 0, 0], 4640));
@@ -38,9 +39,13 @@ async fn main() -> Result<()> {
         .route_service("/oauth/callback/:name", get(oauth_connection::api::callback))
         .layer(Extension(application_state));
 
-    axum::Server::bind(&address)
-        .serve(router.into_make_service())
-        .await?;
+    let api = axum::Server::bind(&address).serve(router.into_make_service());
+
+    tokio::select! {
+        _ = oauth_api_controller => warn!("OAuth API controller exited"),
+        _ = oauth_connection_controller => warn!("OAuth Connection controller exited"),
+        _ = api => warn!("API server exited"),
+    }
 
     Ok(())
 }
