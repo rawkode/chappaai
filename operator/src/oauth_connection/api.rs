@@ -205,7 +205,7 @@ pub async fn callback(
     {
         Ok(t) => t,
         Err(e) => {
-            return (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed: {:?}", e)).into_response();
+            return (StatusCode::UNAUTHORIZED, format!("Failed: {:?}", e)).into_response();
         }
     };
 
