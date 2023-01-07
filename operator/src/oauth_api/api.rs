@@ -1,9 +1,11 @@
-use crate::ApiData;
-use actix_web::{get, web, HttpResponse};
+use std::sync::Arc;
 
-#[get("/oauth/apis")]
-async fn list(data: web::Data<ApiData>) -> HttpResponse {
-    let oauth_apis = &data.oauth_apis.state();
+use crate::{ApplicationState, Result};
+
+use axum::{Extension, Json};
+
+pub async fn list(Extension(state): Extension<Arc<ApplicationState>>) -> Result<Json<Vec<String>>> {
+    let oauth_apis = &state.oauth_apis.state();
 
     let oauth_api_names: Vec<String> = oauth_apis
         .iter()
@@ -13,5 +15,5 @@ async fn list(data: web::Data<ApiData>) -> HttpResponse {
         })
         .collect();
 
-    HttpResponse::Ok().json(oauth_api_names)
+    Ok(Json(oauth_api_names))
 }

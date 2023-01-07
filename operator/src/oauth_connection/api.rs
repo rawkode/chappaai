@@ -8,10 +8,16 @@ use super::OAuthConnection;
 use crate::{
     api_version,
     oauth_connection::{OAuthConnectionPhase, OAuthConnectionStatus},
-    ApiData, Error, OAuthApi,
+    ApplicationState, OAuthApi, Result,
 };
-use actix_web::{get, web, HttpResponse};
+
+use axum::{
+    extract::{Path, Query},
+    response::{IntoResponse, Redirect},
+    Extension, Json,
+};
 use chrono::{DateTime, Utc};
+use hyper::StatusCode;
 use k8s_openapi::api::core::v1::Secret;
 use kube::{
     api::{Patch, PatchParams},
@@ -27,14 +33,15 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-struct OAuthConnectionWeb {
+pub struct OAuthConnectionWeb {
     name: String,
     phase: String,
 }
 
-#[get("/oauth/connections")]
-pub async fn list(data: web::Data<ApiData>) -> HttpResponse {
-    let oauth_connections = &data.oauth_connections.state(); // <- get app_name
+pub async fn list(
+    Extension(state): Extension<Arc<ApplicationState>>,
+) -> Result<Json<Vec<OAuthConnectionWeb>>> {
+    let oauth_connections = &state.oauth_connections.state(); // <- get app_name
     let names: Vec<OAuthConnectionWeb> = oauth_connections
         .iter()
         .map(|service| {
@@ -54,33 +61,32 @@ pub async fn list(data: web::Data<ApiData>) -> HttpResponse {
         })
         .collect();
 
-    HttpResponse::Ok().content_type("application/json").json(names)
+    Ok(Json(names))
 }
 
-#[get("/oauth/connections/{name}")]
 pub async fn connect(
-    query: web::Query<OAuthRequest>,
-    path: web::Path<String>,
-    data: web::Data<ApiData>,
-) -> HttpResponse {
-    let oauth_connection_name = path.into_inner();
+    Query(query): Query<OAuthRequest>,
+    Path(name): Path<String>,
+    Extension(state): Extension<Arc<ApplicationState>>,
+) -> impl IntoResponse {
+    let oauth_connection_name = name;
 
     let (oac, oaa) = match oauth_connection_and_api(
         oauth_connection_name,
-        data.oauth_connections.state(),
-        data.oauth_apis.state(),
+        state.oauth_connections.state(),
+        state.oauth_apis.state(),
     ) {
         Some(result) => result,
-        None => return HttpResponse::NotFound().finish(),
+        None => return StatusCode::NOT_FOUND.into_response(),
     };
 
-    let client = data.client.clone();
+    let client = state.client.clone();
     let secrets: Api<Secret> = Api::default_namespaced(client.clone());
 
     let oauth_client = match oauth_basic_client(secrets.clone(), &oac, &oaa, query.redirect_url.clone()).await
     {
         Ok(c) => c,
-        Err(_) => return HttpResponse::NotFound().finish(),
+        Err(_) => return StatusCode::NOT_FOUND.into_response(),
     };
 
     let oauth_client = oauth_client.authorize_url(|| CsrfToken::new(String::from("abc")));
@@ -91,9 +97,7 @@ pub async fn connect(
 
     let (auth_url, _csrf_token) = oauth_client.url();
 
-    HttpResponse::TemporaryRedirect()
-        .append_header(("Location", auth_url.to_string()))
-        .finish()
+    Redirect::temporary(auth_url.as_ref()).into_response()
 }
 
 async fn oauth_basic_client(
@@ -101,7 +105,7 @@ async fn oauth_basic_client(
     oac: &OAuthConnection,
     oaa: &OAuthApi,
     redirect_url: String,
-) -> Result<oauth2::basic::BasicClient, Error> {
+) -> Result<oauth2::basic::BasicClient> {
     let (client_id, client_secret) = oac.load_client_keys(secrets).await?;
 
     let auth_url = AuthUrl::new(oaa.get_authorization_url()).unwrap();
@@ -153,30 +157,29 @@ pub struct OAuthResponse {
     redirect_url: String,
 }
 
-#[get("/oauth/callback/{name}")]
 pub async fn callback(
-    query: web::Query<OAuthResponse>,
-    path: web::Path<String>,
-    data: web::Data<ApiData>,
-) -> HttpResponse {
+    Query(query): Query<OAuthResponse>,
+    Path(name): Path<String>,
+    Extension(state): Extension<Arc<ApplicationState>>,
+) -> impl IntoResponse {
     // let csrf_check = CsrfToken::new(result.state.clone());
     let auth = AuthorizationCode::new(query.code.clone());
 
-    let oauth_connection_name = path.into_inner();
+    let oauth_connection_name = name;
 
     let (oac, oaa) = match oauth_connection_and_api(
         oauth_connection_name.clone(),
-        data.oauth_connections.state(),
-        data.oauth_apis.state(),
+        state.oauth_connections.state(),
+        state.oauth_apis.state(),
     ) {
         Some(result) => result,
-        None => return HttpResponse::NotFound().finish(),
+        None => return StatusCode::NOT_FOUND.into_response(),
     };
 
     let name = oac.name();
     let namespace = oac.namespace();
 
-    let client = data.client.clone();
+    let client = state.client.clone();
 
     let (api, secrets): (Api<OAuthConnection>, Api<Secret>) = match &namespace {
         Some(namespace) => (
@@ -192,7 +195,7 @@ pub async fn callback(
     let oauth_client = match oauth_basic_client(secrets.clone(), &oac, &oaa, query.redirect_url.clone()).await
     {
         Ok(c) => c,
-        Err(_) => return HttpResponse::NotFound().finish(),
+        Err(_) => return StatusCode::NOT_FOUND.into_response(),
     };
 
     let token = match oauth_client
@@ -202,7 +205,7 @@ pub async fn callback(
     {
         Ok(t) => t,
         Err(e) => {
-            return HttpResponse::Unauthorized().body(format!("Failed: {:?}", e));
+            return (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed: {:?}", e)).into_response();
         }
     };
 
@@ -270,5 +273,5 @@ pub async fn callback(
         }
     };
 
-    HttpResponse::Ok().body("Connected")
+    "Connected".into_response()
 }
