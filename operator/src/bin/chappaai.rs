@@ -12,15 +12,12 @@ use tracing_subscriber::{prelude::*, EnvFilter, Registry};
 #[tokio::main]
 async fn main() -> Result<()> {
     let logger = tracing_subscriber::fmt::layer().json();
-    let env_filter = EnvFilter::try_from_default_env()
-        .or_else(|_| EnvFilter::try_new("info"))
-        .unwrap();
-    let collector = Registry::default().with(logger).with(env_filter);
-    tracing::subscriber::set_global_default(collector).unwrap();
+    let env_filter = EnvFilter::try_from_default_env().or_else(|_| EnvFilter::try_new("info"))?;
 
-    let client = kube::Client::try_default()
-        .await
-        .expect("Couldn't create Kubernetes client");
+    let collector = Registry::default().with(logger).with(env_filter);
+    tracing::subscriber::set_global_default(collector)?;
+
+    let client = kube::Client::try_default().await?;
 
     let (_, oauth_api_store, _oauth_api_controller) = oauth_api::Manager::new(client.clone()).await;
     let (_, oauth_connection_store, _oauth_connection_controller) =

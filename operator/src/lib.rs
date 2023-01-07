@@ -2,6 +2,8 @@ use axum::response::IntoResponse;
 use hyper::StatusCode;
 use kube::runtime::reflector::Store;
 use thiserror::Error;
+use tracing::subscriber::SetGlobalDefaultError;
+use tracing_subscriber::filter::ParseError;
 
 pub mod kubernetes;
 pub mod oauth_api;
@@ -34,13 +36,19 @@ pub enum Error {
     GenericError(String),
 
     #[error("Kube Api Error: {0}")]
-    KubeError(#[source] kube::Error),
+    KubeError(#[from] kube::Error),
 
     #[error("SerializationError: {0}")]
     SerializationError(#[source] serde_json::Error),
 
     #[error("Hyper Error: {0}")]
     HyperError(#[from] hyper::Error),
+
+    #[error("SetGlobalDefaultError: {0}")]
+    SetGlobalDefaultError(#[from] SetGlobalDefaultError),
+
+    #[error("ParseError: {0}")]
+    ParseError(#[from] ParseError),
 }
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
