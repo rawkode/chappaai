@@ -13,7 +13,7 @@ interface Response {
 export const load: PageServerLoad = async ({ fetch }): Promise<Response> => {
 	const res = await fetch("http://127.0.0.1:4640/oauth/connections", {
 		headers: {
-			origin: "http://localhost:5173",
+			origin: "http://localhost:3000",
 		},
 	});
 	const data = await res.json();
