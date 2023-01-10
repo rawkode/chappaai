@@ -20,12 +20,7 @@ impl OAuthApi {
     pub fn get_authorization_url(&self) -> String {
         match &self.spec.auth {
             Some(AuthSpecs::OAuth2(spec)) => {
-                format!(
-                    "{}/{}?{}",
-                    self.spec.http.base_url,
-                    spec.authorization_url,
-                    spec.get_authorization_params()
-                )
+                format!("{}?{}", spec.authorization_url, spec.get_authorization_params())
             }
             _ => todo!(),
         }
@@ -33,7 +28,7 @@ impl OAuthApi {
 
     pub fn get_token_url(&self) -> String {
         match &self.spec.auth {
-            Some(AuthSpecs::OAuth2(spec)) => format!("{}/{}", self.spec.http.base_url, spec.token_url),
+            Some(AuthSpecs::OAuth2(spec)) => format!("{}", spec.token_url),
             _ => todo!(),
         }
     }

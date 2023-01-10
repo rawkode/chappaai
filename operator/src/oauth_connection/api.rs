@@ -77,7 +77,9 @@ pub async fn connect(
         state.oauth_apis.state(),
     ) {
         Some(result) => result,
-        None => return StatusCode::NOT_FOUND.into_response(),
+        None => {
+            return StatusCode::NOT_FOUND.into_response();
+        }
     };
 
     let client = state.client.clone();
@@ -86,7 +88,10 @@ pub async fn connect(
     let oauth_client = match oauth_basic_client(secrets.clone(), &oac, &oaa, query.redirect_url.clone()).await
     {
         Ok(c) => c,
-        Err(_) => return StatusCode::NOT_FOUND.into_response(),
+        Err(error) => {
+            println!("Returning 404 because: {:?}", error);
+            return StatusCode::NOT_FOUND.into_response();
+        }
     };
 
     let oauth_client = oauth_client.authorize_url(|| CsrfToken::new(String::from("abc")));
@@ -173,7 +178,9 @@ pub async fn callback(
         state.oauth_apis.state(),
     ) {
         Some(result) => result,
-        None => return StatusCode::NOT_FOUND.into_response(),
+        None => {
+            return StatusCode::NOT_FOUND.into_response();
+        }
     };
 
     let name = oac.name();
@@ -195,7 +202,10 @@ pub async fn callback(
     let oauth_client = match oauth_basic_client(secrets.clone(), &oac, &oaa, query.redirect_url.clone()).await
     {
         Ok(c) => c,
-        Err(_) => return StatusCode::NOT_FOUND.into_response(),
+        Err(error) => {
+            println!("Returning 404 because: {:?}", error);
+            return StatusCode::NOT_FOUND.into_response();
+        }
     };
 
     let token = match oauth_client
