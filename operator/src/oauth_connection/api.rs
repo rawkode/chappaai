@@ -52,8 +52,8 @@ pub async fn list(
                 phase: match &service.status {
                     Some(OAuthConnectionStatus {
                         phase: Some(phase),
-                        secret_name: None,
-                        expires_at: None,
+                        secret_name: _,
+                        expires_at: _,
                     }) => phase.into(),
                     _ => String::from("Status and phase not known"),
                 },
