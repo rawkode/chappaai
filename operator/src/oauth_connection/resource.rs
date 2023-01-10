@@ -10,6 +10,8 @@ use serde::{Deserialize, Serialize};
     version = "v1",
     kind = "OAuthConnection",
     status = "OAuthConnectionStatus",
+    printcolumn = r#"{"name":"Status", "type":"string", "description":"current connection status", "jsonPath":".status.phase"}"#,
+    printcolumn = r#"{"name":"Expiry", "type":"string", "description":"token expiry", "jsonPath":".status.expires_at"}"#,
     namespaced
 )]
 #[serde(rename_all = "camelCase")]
