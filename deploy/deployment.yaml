@@ -14,13 +14,13 @@ spec:
       serviceAccountName: chappaai
       containers:
         - name: operator
-          image: ghcr.io/rawkode/chappaai/operator:0.0.5
+          image: ghcr.io/rawkode/chappaai/operator:0.0.6
           resources:
             limits:
               memory: "128Mi"
               cpu: "500m"
         - name: web
-          image: ghcr.io/rawkode/chappaai/web:0.0.5
+          image: ghcr.io/rawkode/chappaai/web:0.0.6
           resources:
             limits:
               memory: "128Mi"
