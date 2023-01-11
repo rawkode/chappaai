@@ -228,6 +228,10 @@ pub async fn callback(
         token.access_token().secret().to_string(),
     );
 
+    if let Some(refresh_token) = token.refresh_token() {
+        string_data.insert("refreshToken".to_string(), refresh_token.secret().to_string());
+    }
+
     let new_secret = Secret {
         metadata: ObjectMeta {
             name: Some(secret_name.clone()),
